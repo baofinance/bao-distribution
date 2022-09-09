@@ -78,3 +78,74 @@ contract VyperDeployer {
         return deployedAddress;
     }
 }
+
+function deployERC20BAO(string memory fileName, bytes calldata args) public returns(address) {
+        string[] memory cmds1 = new string[](3);
+        cmds1[0] = "pip";
+        cmds1[1] = "install";
+        cmds1[2] = "vyper==0.3.3";
+
+        //vyper version change
+        cheatCodes.ffi(cmds1);
+        
+        string[] memory cmds2 = new string[](2);
+        cmds2[0] = "vyper";
+        cmds2[1] = string.concat("vyper_contracts/", fileName, ".vy");
+
+        ///@notice compile the Vyper contract and return the bytecode
+        bytes memory _bytecode = cheatCodes.ffi(cmds2);
+
+        //add args to the deployment bytecode
+        bytes memory bytecode = abi.encodePacked(_bytecode, args);
+
+        ///@notice deploy the bytecode with the create instruction
+        address deployedAddress;
+        assembly {
+            deployedAddress := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+
+        ///@notice check that the deployment was successful
+        require(
+            deployedAddress != address(0),
+            "VyperDeployer could not deploy contract"
+        );
+
+        ///@notice return the address that the contract was deployed to
+        return deployedAddress;
+    }
+
+    function deployVoteEscrow(string memory fileName, bytes calldata args) public returns(address) {
+        string[] memory cmds1 = new string[](3);
+        cmds1[0] = "pip";
+        cmds1[1] = "install";
+        cmds1[2] = "vyper==0.2.4";
+        
+        //vyper version change
+        cheatCodes.ffi(cmds1);
+        
+        string[] memory cmds2 = new string[](2);
+        cmds2[0] = "vyper";
+        cmds2[1] = string.concat("vyper_contracts/", fileName, ".vy");
+
+        ///@notice compile the Vyper contract and return the bytecode
+        bytes memory _bytecode = cheatCodes.ffi(cmds2);
+
+        //add args to the deployment bytecode
+        bytes memory bytecode = abi.encodePacked(_bytecode, args);
+
+        ///@notice deploy the bytecode with the create instruction
+        address deployedAddress;
+        assembly {
+            deployedAddress := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+
+        ///@notice check that the deployment was successful
+        require(
+            deployedAddress != address(0),
+            "VyperDeployer could not deploy contract"
+        );
+
+        ///@notice return the address that the contract was deployed to
+        return deployedAddress;
+    }
+}
