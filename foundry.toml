@@ -1,0 +1,18 @@
+[default]
+# project
+src = 'src'
+test = 'src/test'
+out = 'out'
+libs = ['lib']
+cache = true
+solc_version = '0.8.13'
+optimizer = true
+optimizer_runs = 500
+# tests
+chain_id = 1
+fuzz_runs = 1024
+ffi = true
+gas_reports = ['*']
+no_storage_caching = false
+rpc_storage_caching = { chains = 'all', endpoints = 'remote' }
+
