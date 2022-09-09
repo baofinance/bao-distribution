@@ -48,15 +48,16 @@ contract LockDistributionTest is DSTest {
 
         //Deploy BAOv2 token contract
         baoToken = IERC20BAO(
-            vyperDeployer.deployContract("ERC20BAO", abi.encode("BAO Token", "BAO", 18))
+            vyperDeployer.deployERC20BAO("ERC20BAO", abi.encode("BAO Token", "BAO", 18))
         );
 
         //Deploy Voting Escrow contract
         voteEscrow = IVotingEscrow(
-            vyperDeployer.deployContract("VotingEscrow", abi.encode(address(baoToken), "Vote Escrowed BAO", "veBAO", "0.2.4"))
+            vyperDeployer.deployVoteEscrow("VotingEscrow", abi.encode(address(baoToken), "Vote Escrowed BAO", "veBAO", "0.2.4"))
         );
 
         //deploy distribution contract with snapshot merkle root
+        cheats.prank(address(vyperDeployer));
         distribution = new BaoDistribution(
             address(baoToken),
             address(voteEscrow),
@@ -92,29 +93,67 @@ contract LockDistributionTest is DSTest {
         proof2.push(0x9d7ff74eec600ac6ffe42f02d4ae6b16219c714e02a535e853850ba9e7677878);
         proof2.push(0x4b7feb1f0234422835771be9152c527c22a60ca378ce2fc7f350c1aa8e115032);
 
-        cheats.prank(eoa1);
+        cheats.prank(address(vyperDeployer));
+        baoToken.transfer(address(distribution), 15e26);
+        assertEq(baoToken.balanceOf(address(distribution)), 15e26);
+
+        cheats.prank(address(vyperDeployer));
         voteEscrow.commit_distr_contract(address(distribution));
-        cheats.prank(eoa1);
+        cheats.prank(address(vyperDeployer));
         voteEscrow.apply_distr_contract();
 
     }
 
     // -------------------------------
-    // START DISTRIBUTION TESTS
+    // LOCK DISTRIBUTION TESTS
     // -------------------------------
 
-    function testStartDistr() public { 
-        cheats.startPrank(eoa1);
+    function testLockDistr() public { 
+        cheats.startPrank(eoa1);//******************** */
+
         distribution.startDistribution(proof1, amount1);
-        assert(distribution.claimable(eoa1, uint64(block.timestamp)) == 0);
+        assertEq(distribution.claimable(eoa1, 0), 0);
+
+        emit log_named_address("admin", address(vyperDeployer));
+        emit log_named_address("distr address", address(distribution));
+        emit log_named_address("ve address", address(voteEscrow));
+        emit log_named_address("token address", address(baoToken));
+        emit log_named_address("eoa1 address", eoa1);
+        emit log_named_address("eoa2 address", eoa2);
 
         cheats.warp(block.timestamp + 1 days);
 
+        emit log_named_uint("claimable balance", distribution.claimable(eoa1, uint64(block.timestamp)));
+        emit log_named_uint("distribution balance", baoToken.balanceOf(address(distribution)));
+
         distribution.lockDistribution(block.timestamp + 126144000);
 
+        emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
 
+        cheats.warp(block.timestamp + 365 days);
 
-        cheats.stopPrank();
+        emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
+
+        uint256 end1 = voteEscrow.locked__end(eoa1);
+        voteEscrow.increase_unlock_time(end1 + 100 days);
+
+        cheats.stopPrank();//*********************** */
+
+        /*cheats.startPrank(eoa2);
+
+        distribution.startDistribution(proof2, amount2);
+        assertEq(distribution.claimable(eoa2, 0), 0);
+
+        cheats.warp(block.timestamp + 1 days);
+
+        emit log_named_uint("claimable balance eoa 2", distribution.claimable(eoa2, uint64(block.timestamp)));
+        baoToken.balanceOf(address(distribution)); //this is 1.5 billy
+        emit log_named_uint("distribution balance eoa 2 update", baoToken.balanceOf(address(distribution)));
+        distribution.lockDistribution(block.timestamp + 126144000); //this is within time range
+
+        emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
+
+        cheats.stopPrank();*/
     }
 
     

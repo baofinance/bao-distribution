@@ -92,7 +92,7 @@ contract BaoDistribution is ReentrancyGuard {
             _now,
             0,
             _now,
-            _amount
+            _amount / 1000
         );
         emit DistributionStarted(msg.sender);
     }

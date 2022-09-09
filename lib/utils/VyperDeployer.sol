@@ -77,9 +77,8 @@ contract VyperDeployer {
         ///@notice return the address that the contract was deployed to
         return deployedAddress;
     }
-}
 
-function deployERC20BAO(string memory fileName, bytes calldata args) public returns(address) {
+    function deployERC20BAO(string memory fileName, bytes calldata args) public returns(address) {
         string[] memory cmds1 = new string[](3);
         cmds1[0] = "pip";
         cmds1[1] = "install";
@@ -149,3 +148,4 @@ function deployERC20BAO(string memory fileName, bytes calldata args) public retu
         return deployedAddress;
     }
 }
+

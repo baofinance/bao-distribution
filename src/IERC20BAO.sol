@@ -1,6 +1,7 @@
 pragma solidity 0.8.13;
 
 interface IERC20BAO {
+    function balanceOf(address _addr) external view returns(uint256);
     function update_mining_parameters() external;
     function start_epoch_time_write() external;
     function future_epoch_time_write() external;
