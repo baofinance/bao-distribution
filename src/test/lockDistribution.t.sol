@@ -126,34 +126,26 @@ contract LockDistributionTest is DSTest {
         emit log_named_uint("claimable balance", distribution.claimable(eoa1, uint64(block.timestamp)));
         emit log_named_uint("distribution balance", baoToken.balanceOf(address(distribution)));
 
-        distribution.lockDistribution(block.timestamp + 126144000);
+        distribution.lockDistribution(block.timestamp + 94608000);  //distr calls vote escrow | 4yr = 126144000 | 3 yr = 94608000
+
+        voteEscrow.increase_unlock_time(block.timestamp + 126144000);
 
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
 
-        cheats.warp(block.timestamp + 365 days);
-
+        cheats.warp(block.timestamp + 94608001);
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
+
+        voteEscrow.withdraw();
+
+        voteEscrow.create_lock(amount1, block.timestamp + 21 days);
+        cheats.warp(block.timestamp + 7 days);
+        voteEscrow.increase_unlock_time(block.timestamp + 365 days);
 
         uint256 end1 = voteEscrow.locked__end(eoa1);
-        voteEscrow.increase_unlock_time(end1 + 100 days);
 
         cheats.stopPrank();//*********************** */
 
-        /*cheats.startPrank(eoa2);
-
-        distribution.startDistribution(proof2, amount2);
-        assertEq(distribution.claimable(eoa2, 0), 0);
-
-        cheats.warp(block.timestamp + 1 days);
-
-        emit log_named_uint("claimable balance eoa 2", distribution.claimable(eoa2, uint64(block.timestamp)));
-        baoToken.balanceOf(address(distribution)); //this is 1.5 billy
-        emit log_named_uint("distribution balance eoa 2 update", baoToken.balanceOf(address(distribution)));
-        distribution.lockDistribution(block.timestamp + 126144000); //this is within time range
-
-        emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
-
-        cheats.stopPrank();*/
+        
     }
 
     

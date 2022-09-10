@@ -8,6 +8,7 @@ interface IVotingEscrow {
     function get_last_user_slope(address addr) external view returns(int128);
     function user_point_history__ts(address _addr, uint256 _idx) external view returns(uint256);
     function locked__end(address _addr) external view returns(uint256);
+    function create_lock(uint256 _value, uint256 _unlock_time) external;
     function create_lock_for(address _to, uint256 _value, uint256 _unlock_time) external;
     function increase_amount(uint256 _value) external;
     function increase_unlock_time(uint256 _unlock_time) external;

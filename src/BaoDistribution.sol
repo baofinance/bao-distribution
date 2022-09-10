@@ -171,7 +171,7 @@ contract BaoDistribution is ReentrancyGuard {
         if (_claimable == 0) {
             revert ZeroClaimable();
         }
-        if (_time < 94608000) {
+        if (_time < block.timestamp + 94608000) {
             revert outsideLockRange();
         }
 
