@@ -75,7 +75,7 @@ contract LockDistributionTest is DSTest {
         proof1.push(0x8310cf070515dcb50f13259a1f5cf52c6bd7db2f3004525eaf17c6335ccd333c);
         proof1.push(0xbe44074166d23ae6832865be9972f4f3776a903e1a5e9e2c1780313fe629dfa3);  
         proof1.push(0xbaba52a8a741481583014f906912d7870d53fd776fb6529ec6fca8af2b6877d0);
-        proof1.push(0x74e8548f3229e22c31e75e2f80ac2757237cc8b435d3658438927bfa891b9763);  
+        proof1.push(0x74e8548f3229e22c31e75e2f80ac2757237cc8b435d3658438927bfa891b9763);
         proof1.push(0x9d7ff74eec600ac6ffe42f02d4ae6b16219c714e02a535e853850ba9e7677878);
         proof1.push(0x4b7feb1f0234422835771be9152c527c22a60ca378ce2fc7f350c1aa8e115032);
 
@@ -102,6 +102,8 @@ contract LockDistributionTest is DSTest {
         cheats.prank(address(vyperDeployer));
         voteEscrow.apply_distr_contract();
 
+        
+
     }
 
     // -------------------------------
@@ -111,9 +113,11 @@ contract LockDistributionTest is DSTest {
     function testLockDistr() public { 
         cheats.startPrank(eoa1);//******************** */
 
+        //start "0x48B72465FeD54964a9a0bb2FB95DBc89571604eC" distribution with locked bao amount:53669753833360467444414559923
         distribution.startDistribution(proof1, amount1);
         assertEq(distribution.claimable(eoa1, 0), 0);
 
+        //log all the environments addresses
         emit log_named_address("admin", address(vyperDeployer));
         emit log_named_address("distr address", address(distribution));
         emit log_named_address("ve address", address(voteEscrow));
@@ -121,14 +125,22 @@ contract LockDistributionTest is DSTest {
         emit log_named_address("eoa1 address", eoa1);
         emit log_named_address("eoa2 address", eoa2);
 
-        cheats.warp(block.timestamp + 1 days);
+        cheats.warp(block.timestamp + 1 days); //forward 1 day after startDistribution() call
 
         emit log_named_uint("claimable balance", distribution.claimable(eoa1, uint64(block.timestamp)));
-        emit log_named_uint("distribution balance", baoToken.balanceOf(address(distribution)));
+        emit log_named_uint("distribution balance", baoToken.balanceOf(address(distribution))); //1.5 billion from token contract deployment
 
+        //lock using distribution contract lock option into voting escrow for 3 years
+        /* msg.sender of lockDistribution() == 0x48B72465FeD54964a9a0bb2FB95DBc89571604eC AKA eoa1, an externally owned account
+        *  in lockDistribution() the distribution contract [address:0x8add0dbf7e58c9a8ea5981da48930ecceb9cfba7] calls create_lock_for()
+        *  of the voting escrow contract ###THIS IS PROBABLY WHERE msg.sender changes to 0x8add0dbf7e58c9a8ea5981da48930ecceb9cfba7 instead of
+        *  tx.origin which is 0x48B72465FeD54964a9a0bb2FB95DBc89571604eC
+        *  inside create_lock_for() internal function distr_deposit() of the voting escrow contract is called making the lock for eoa1
+        *  there after the error in assert_not_contract() is present for all activity with vote escrow fucntions associated to the address eoa1
+        */
         distribution.lockDistribution(block.timestamp + 94608000);  //distr calls vote escrow | 4yr = 126144000 | 3 yr = 94608000
-
-        voteEscrow.increase_unlock_time(block.timestamp + 126144000);
+        //cheats.warp(block.timestamp + 3 days);
+        //voteEscrow.increase_unlock_time(block.timestamp + 110000000);
 
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
 
@@ -141,14 +153,12 @@ contract LockDistributionTest is DSTest {
         cheats.warp(block.timestamp + 7 days);
         voteEscrow.increase_unlock_time(block.timestamp + 365 days);
 
-        uint256 end1 = voteEscrow.locked__end(eoa1);
+        //uint256 end1 = voteEscrow.locked__end(eoa1);
 
         cheats.stopPrank();//*********************** */
 
         
     }
-
-    
 
     // -------------------------------
     // HELPERS
