@@ -44,6 +44,9 @@ contract SmartWalletWhitelist {
     }
     
     function check(address _wallet) external view returns (bool) {
+        if (!isContract(_wallet)) {
+            return true;
+        }
         bool _check = wallets[_wallet];
         if (_check) {
             return _check;
@@ -53,5 +56,10 @@ contract SmartWalletWhitelist {
             }
         }
         return false;
+    }
+
+    // INFO: https://ethereum.stackexchange.com/a/131359
+    function isContract(address _addr) private view {
+        return _addr.code.length > 0;
     }
 }
