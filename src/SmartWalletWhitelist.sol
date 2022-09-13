@@ -59,7 +59,7 @@ contract SmartWalletWhitelist {
     }
 
     // INFO: https://ethereum.stackexchange.com/a/131359
-    function isContract(address _addr) private view {
-        return _addr.code.length > 0;
+    function isContract(address _addr) private view returns (bool _isContract) {
+        _isContract = _addr.code.length > 0;
     }
 }
