@@ -9,6 +9,7 @@ import "solmate/utils/FixedPointMathLib.sol";
 import "../IERC20BAO.sol";
 import "../IVotingEscrow.sol";
 import "../BaoDistribution.sol";
+import "../SmartWalletWhitelist.sol";
 
 interface Cheats {
     function deal(address who, uint256 amount) external;
@@ -30,6 +31,7 @@ contract LockDistributionTest is DSTest {
     IERC20BAO public baoToken;
     IVotingEscrow public voteEscrow;
     BaoDistribution public distribution;
+    SmartWalletWhitelist public whitelist;
 
     address public eoa1 = 0x48B72465FeD54964a9a0bb2FB95DBc89571604eC;
     address public eoa2 = 0x609991ca0Ae39BC4EAF2669976237296D40C2F31;
@@ -63,6 +65,11 @@ contract LockDistributionTest is DSTest {
             address(voteEscrow),
             0x41c02385a07002f9d8fd88c8fb950c308c6f7bf7c748b57ae9b892e291900363,
             address(this)
+        );
+
+        whitelist = new SmartWalletWhitelist(
+            address(vyperDeployer),
+            address(distribution)
         );
 
         proof1.push(0x7c55d8a6ded3b13b342fc383df5bb934076f49a6598303ea68ea78ae4630d445);
@@ -102,8 +109,10 @@ contract LockDistributionTest is DSTest {
         cheats.prank(address(vyperDeployer));
         voteEscrow.apply_distr_contract();
 
-        
-
+        cheats.prank(address(vyperDeployer));
+        voteEscrow.commit_smart_wallet_checker(address(whitelist));
+        cheats.prank(address(vyperDeployer));
+        voteEscrow.apply_smart_wallet_checker();
     }
 
     // -------------------------------
