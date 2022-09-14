@@ -15,7 +15,9 @@ interface Cheats {
     function deal(address who, uint256 amount) external;
     function warp(uint256 num) external;
     function prank(address sender) external;
+    function prank(address sender, address origin) external;
     function startPrank(address sender) external;
+    function startPrank(address sender, address origin) external;
     function stopPrank() external;
     function assume(bool condition) external;
 }
@@ -113,10 +115,6 @@ contract LockDistributionTest is DSTest {
         voteEscrow.commit_smart_wallet_checker(address(whitelist));
         cheats.prank(address(vyperDeployer));
         voteEscrow.apply_smart_wallet_checker();
-        cheats.prank(address(vyperDeployer));
-        whitelist.approveWallet(address(eoa1));
-        cheats.prank(address(vyperDeployer));
-        whitelist.approveWallet(address(eoa2));
     }
 
     // -------------------------------
@@ -124,7 +122,7 @@ contract LockDistributionTest is DSTest {
     // -------------------------------
 
     function testLockDistr() public { 
-        cheats.startPrank(eoa1);//******************** */
+        cheats.startPrank(eoa1, eoa1);//******************** */
 
         //start "0x48B72465FeD54964a9a0bb2FB95DBc89571604eC" distribution with locked bao amount:53669753833360467444414559923
         distribution.startDistribution(proof1, amount1);
@@ -152,12 +150,12 @@ contract LockDistributionTest is DSTest {
         *  there after the error in assert_not_contract() is present for all activity with vote escrow fucntions associated to the address eoa1
         */
         distribution.lockDistribution(block.timestamp + 94608000);  //distr calls vote escrow | 4yr = 126144000 | 3 yr = 94608000
-        //cheats.warp(block.timestamp + 3 days);
-        //voteEscrow.increase_unlock_time(block.timestamp + 110000000);
+        cheats.warp(block.timestamp + 3 days);
+        voteEscrow.increase_unlock_time(block.timestamp + 110000000);
 
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
 
-        cheats.warp(block.timestamp + 94608001);
+        cheats.warp(block.timestamp + 110000001);
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
 
         voteEscrow.withdraw();
