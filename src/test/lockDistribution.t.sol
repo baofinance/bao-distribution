@@ -160,7 +160,10 @@ contract LockDistributionTest is DSTest {
 
         voteEscrow.withdraw();
 
-        voteEscrow.create_lock(amount1, block.timestamp + 21 days);
+        baoToken.approve(address(voteEscrow), baoToken.balanceOf(eoa1));
+        voteEscrow.create_lock(baoToken.balanceOf(eoa1), block.timestamp + 21 days);
+        //baoToken.approve(address(voteEscrow), amount1);
+        //voteEscrow.create_lock(amount1, block.timestamp + 21 days);
         cheats.warp(block.timestamp + 7 days);
         voteEscrow.increase_unlock_time(block.timestamp + 365 days);
 
