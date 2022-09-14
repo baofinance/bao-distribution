@@ -113,6 +113,10 @@ contract LockDistributionTest is DSTest {
         voteEscrow.commit_smart_wallet_checker(address(whitelist));
         cheats.prank(address(vyperDeployer));
         voteEscrow.apply_smart_wallet_checker();
+        cheats.prank(address(vyperDeployer));
+        whitelist.approveWallet(address(eoa1));
+        cheats.prank(address(vyperDeployer));
+        whitelist.approveWallet(address(eoa2));
     }
 
     // -------------------------------
