@@ -326,7 +326,7 @@ contract LockDistributionTest is DSTest {
 
         baoToken.approve(address(voteEscrow), baoToken.balanceOf(eoa1)); //eoa1 approves ve contract
         voteEscrow.create_lock(baoToken.balanceOf(eoa1) / 2, block.timestamp + 21 days); //eoa1 calls create_lock() inside the voting escrow contract to create another 
-        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());              //lock without the distribution contract this time at 3 weeks in length
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());                  //lock without the distribution contract this time at 3 weeks in length
         
         cheats.warp(block.timestamp + 7 days);
         voteEscrow.increase_amount(baoToken.balanceOf(eoa1)); //eoa1 increases the unlock amount for the lock made with create_lock() above
@@ -363,9 +363,7 @@ contract LockDistributionTest is DSTest {
         //token balance after withdraw is equal to amount1 / 1000, which is the correct owed amount
 
         cheats.stopPrank();
-
     }
-
 
     // -------------------------------
     // HELPERS
