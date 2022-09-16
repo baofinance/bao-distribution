@@ -55,7 +55,7 @@ contract LockDistributionTest is DSTest {
 
         //Deploy Voting Escrow contract
         voteEscrow = IVotingEscrow(
-            vyperDeployer.deployVoteEscrow("VotingEscrow", abi.encode(address(baoToken), "Vote Escrowed BAO", "veBAO", "0.2.4"))
+            vyperDeployer.deployVy0_2_4("VotingEscrow", abi.encode(address(baoToken), "Vote Escrowed BAO", "veBAO", "0.2.4"))
         );
 
         //deploy distribution contract with snapshot merkle root

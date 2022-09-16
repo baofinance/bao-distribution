@@ -113,7 +113,7 @@ contract VyperDeployer {
         return deployedAddress;
     }
 
-    function deployVoteEscrow(string memory fileName, bytes calldata args) public returns(address) {
+    function deployVy0_2_4(string memory fileName, bytes calldata args) public returns(address) {
         string[] memory cmds1 = new string[](3);
         cmds1[0] = "pip";
         cmds1[1] = "install";

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: GPL-3.0
-/*
 pragma solidity ^0.8.13;
 
 import "ds-test/test.sol";
@@ -180,4 +179,3 @@ contract BaoDistributionTest is DSTest {
         return FixedPointMathLib.mulDivDown(d, 1e18, 86400);
     }
 }
-*/
