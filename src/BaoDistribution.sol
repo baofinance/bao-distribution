@@ -17,6 +17,7 @@ contract BaoDistribution is ReentrancyGuard {
     IERC20 public baoToken;
     IVotingEscrow public votingEscrow;
     mapping(address => DistInfo) public distributions;
+    mapping(address => bool) public lockStatus;
     address public treasury;
 
     // -------------------------------
@@ -55,6 +56,7 @@ contract BaoDistribution is ReentrancyGuard {
     error ZeroClaimable();
     error InvalidTimestamp();
     error outsideLockRange();
+    error alreadyLocked();
 
     /**
      * Create a new BaoDistribution contract.
@@ -167,6 +169,9 @@ contract BaoDistribution is ReentrancyGuard {
      * The Lock into veBAO will be set at _time with this function in-line with length of distribution curve (minimum of 3 years)
      */
     function lockDistribution(uint256 _time) external nonReentrant {
+        if (lockStatus[msg.sender] == true) {
+            revert alreadyLocked();
+        }
         uint256 _claimable = claimable(msg.sender, 0);
         if (_claimable == 0) {
             revert ZeroClaimable();
@@ -187,6 +192,9 @@ contract BaoDistribution is ReentrancyGuard {
 
         //lock tokensLeft for msg.sender for _time years (minimum of 3 years)
         votingEscrow.create_lock_for(msg.sender, tokensLeft, _time);
+
+        lockStatus[msg.sender] = true;
+        distInfo.dateEnded = timestamp;
 
         emit DistributionLocked(msg.sender, tokensLeft);
     }

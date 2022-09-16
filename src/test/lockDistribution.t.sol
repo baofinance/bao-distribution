@@ -22,8 +22,6 @@ interface Cheats {
     function assume(bool condition) external;
 }
 
-//snapshot merkle root = 0x41c02385a07002f9d8fd88c8fb950c308c6f7bf7c748b57ae9b892e291900363
-
 contract LockDistributionTest is DSTest {
 
     Cheats public cheats;
@@ -69,11 +67,13 @@ contract LockDistributionTest is DSTest {
             address(this)
         );
 
+        //deploy whitelist
         whitelist = new SmartWalletWhitelist(
             address(vyperDeployer),
             address(distribution)
         );
 
+        //store merkle proofs
         proof1.push(0x7c55d8a6ded3b13b342fc383df5bb934076f49a6598303ea68ea78ae4630d445);
         proof1.push(0x44db9ee999de8b628c5de2592b347008ebd4e77b94f4ef1d121a4aca6e8e8d51);
         proof1.push(0xb6a829733a6f85d368893b416f8a967e2189681368d3788134eee3c5bf22e976);  
@@ -102,15 +102,18 @@ contract LockDistributionTest is DSTest {
         proof2.push(0x9d7ff74eec600ac6ffe42f02d4ae6b16219c714e02a535e853850ba9e7677878);
         proof2.push(0x4b7feb1f0234422835771be9152c527c22a60ca378ce2fc7f350c1aa8e115032);
 
+        //transfer initial supply after farms end to the distribution contract
         cheats.prank(address(vyperDeployer));
         baoToken.transfer(address(distribution), 15e26);
         assertEq(baoToken.balanceOf(address(distribution)), 15e26);
 
+        //commit and apply distribution contract to the voting escrow contract
         cheats.prank(address(vyperDeployer));
         voteEscrow.commit_distr_contract(address(distribution));
         cheats.prank(address(vyperDeployer));
         voteEscrow.apply_distr_contract();
 
+        //commit and apply whitelist contract to the voting escrow contract
         cheats.prank(address(vyperDeployer));
         voteEscrow.commit_smart_wallet_checker(address(whitelist));
         cheats.prank(address(vyperDeployer));
@@ -132,17 +135,14 @@ contract LockDistributionTest is DSTest {
 
         cheats.warp(block.timestamp + 1);
 
-        emit log_named_uint("claimable balance after 1 sec", distribution.claimable(eoa1, uint64(block.timestamp)));
-
         distribution.lockDistribution(block.timestamp + 126144000); //eoa1 locks for 4 years
         emit log_named_uint("ve balance after lock", voteEscrow.balanceOf(eoa1));
         emit log_named_uint("token balance after lock", baoToken.balanceOf(eoa1));
 
-        /* assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve/distribution math but 4 years puts them almost 1:1)
-        * 1 BAO locked for 4 years = ~1 veBAO
+        /* assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve math but 4 years puts them almost 1:1)
+        * 1 BAO locked for 4 years = ~1 veBAO, where veBAO is less than BAO balance
         * 53669753833360461448429661, tokensLeft calculation from distribution
         * 53418898874984233935234217, actual ve Balance after the lock call
-        * approximation uncertainty = 2 * abs(a - b) / (a + b)
         * 0                           circulating balance before lock
         * 0                           circulating balance after lock
         */
@@ -150,7 +150,7 @@ contract LockDistributionTest is DSTest {
         cheats.warp(block.timestamp + 126144001);
         emit log_named_uint("ve balance after expiry", voteEscrow.balanceOf(eoa1));
 
-        voteEscrow.withdraw();
+        voteEscrow.withdraw(); //withdraw veBAO to BAO
 
         emit log_named_uint("ve balance after withdraw", voteEscrow.balanceOf(eoa1));
         emit log_named_uint("token balance after withdraw", baoToken.balanceOf(eoa1));
@@ -169,13 +169,39 @@ contract LockDistributionTest is DSTest {
 
         cheats.warp(block.timestamp + 1);
 
-        emit log_named_uint("claimable balance after 1 sec", distribution.claimable(eoa1, uint64(block.timestamp)));
+        distribution.lockDistribution(block.timestamp + 126144000); //eoa1 locks for 4 years
+        emit log_named_uint("ve balance after lock", voteEscrow.balanceOf(eoa1));
+        emit log_named_uint("token balance after lock", baoToken.balanceOf(eoa1));
+
+        distribution.lockDistribution(block.timestamp + 94608000); //reverts as there is already an existing lock
+
+        cheats.stopPrank();
+    }
+
+    function testFailInvalidProofAddr() public {
+        cheats.startPrank(address(this), address(this));
+
+        distribution.lockDistribution(block.timestamp + 126144000); //startDistribution() was not succesffuly called before hand, revert
+
+        cheats.stopPrank();
+    }
+
+    function testFailClaimAfterLock() public {
+        cheats.startPrank(eoa1, eoa1);
+
+        emit log_named_uint("token balance before lock", baoToken.balanceOf(eoa1)); 
+
+        distribution.startDistribution(proof1, amount1); //start distribution for eoa 1
+        assertEq(distribution.claimable(eoa1, 0), 0); //assert 0 claimable as no time has passed
+        assertEq(voteEscrow.totalSupply(), 0); //no locks yet, should be 0
+
+        cheats.warp(block.timestamp + 1);
 
         distribution.lockDistribution(block.timestamp + 126144000); //eoa1 locks for 4 years
         emit log_named_uint("ve balance after lock", voteEscrow.balanceOf(eoa1));
         emit log_named_uint("token balance after lock", baoToken.balanceOf(eoa1));
 
-        distribution.lockDistribution(block.timestamp + 94608000); //reverts as there is already an existing lock stored
+        distribution.claim(); //should revert as lockDistribution() was already called
 
         cheats.stopPrank();
     }
@@ -183,42 +209,49 @@ contract LockDistributionTest is DSTest {
     function testClaimBeforeLockDistr() public {
         cheats.startPrank(eoa1, eoa1);
         
-        distribution.startDistribution(proof1, amount1); //start distribution for eao 1
+        distribution.startDistribution(proof1, amount1); //start distribution for eoa 1
         assertEq(distribution.claimable(eoa1, 0), 0); //assert 0 claimable as no time has passed
 
         cheats.warp(block.timestamp + 365 days);
 
         emit log_named_uint("token balance before claim", baoToken.balanceOf(eoa1));
-
         uint256 beforeClaimBal1 = distribution.claimable(eoa1, uint64(block.timestamp));
+
         distribution.claim(); //eoa1 claims after 1 year
 
         emit log_named_uint("token balance after claim", baoToken.balanceOf(eoa1));
 
-        assert(baoToken.balanceOf(eoa1) == beforeClaimBal1); //assert eoa1 received the right amount from claim
+        assertEq(baoToken.balanceOf(eoa1), beforeClaimBal1); //assert eoa1 received the right amount from claim
         assertEq(distribution.claimable(eoa1, uint64(block.timestamp)), 0); //claimable should now be 0
         assertEq(voteEscrow.totalSupply(), 0); //no locks yet, should be 0
 
         cheats.warp(block.timestamp + 1);
 
-        distribution.lockDistribution(block.timestamp + 126144000); //eoa1 locks for 4 years after claiming once
+        distribution.lockDistribution(block.timestamp + 126144000); //eoa1 locks for 4 years after claiming once a year after the distribution was started
         emit log_named_uint("ve balance", voteEscrow.balanceOf(eoa1));
 
-        //emit log_named_bytes("supply assertion", abi.encode(assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply())));
-        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply()); //assert eoa1 balance is total supply as its the only lock
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply()); //assert eoa1 balance is total supply as its the only lock in existence
 
         /* assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve math but 4 years puts them almost 1 to 1)
         * 1 BAO locked for 4 years = ~1 veBAO
         * 47706447473685581843456469, tokensLeft calculation from distribution
         * 47679519183957423258749371, actual ve Balance after the lock call
-        * approximation = 2 * abs(a - b) / (a + b) <= precision, where precision is 1e(-10)
-        * approx(47679519183957423258749371, 47706447473685581843456469) falls within 1e(-10) precision
-        * 5963305981484495189574468,  circulating balance after claim
         * 0                           circulating balance before claim
+        * 5963305981484495189574468,  circulating balance after claim
+        * 47706447473685581843456469 (distr amount locked) + 5963305981484495189574468 (distr amount claimed) = total
         */
+
+        emit log_named_uint("total theorhetical balance", amount1 / 1000);
+        emit log_named_uint("total realized balance with an active lock at 4 years", voteEscrow.balanceOf(eoa1) + baoToken.balanceOf(eoa1));
+        assert(voteEscrow.balanceOf(eoa1) + baoToken.balanceOf(eoa1) < amount1 / 1000);
+
+        //upon withdrawal the user will receive 100% of realized tokens back even though 
+        //the ve balance reflects slightly less
+
+        cheats.stopPrank();
     }
 
-    function testLockDistrToVeFunctions() public { 
+    function testLockDistrToVeFunctions1() public { 
         cheats.startPrank(eoa1, eoa1);
 
         distribution.startDistribution(proof1, amount1);
@@ -235,28 +268,104 @@ contract LockDistributionTest is DSTest {
         cheats.warp(block.timestamp + 1 days); //forward 1 day after startDistribution() call
 
         emit log_named_uint("claimable balance", distribution.claimable(eoa1, uint64(block.timestamp)));
-        emit log_named_uint("distribution balance", baoToken.balanceOf(address(distribution))); //1.5 billion from token contract deployment
 
         //lock using distribution contract lock option into voting escrow for 3 years
         distribution.lockDistribution(block.timestamp + 94608000);  //distr calls vote escrow | 4yr = 126144000 | 3 yr = 94608000
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());
         cheats.warp(block.timestamp + 3 days);
-        voteEscrow.increase_unlock_time(voteEscrow.locked__end(eoa1) + 365 days);
+
+        //call the vote escrow function, increase_unlock_time(), from eoa1 after lockDistribution() call creates the lock on behalf of the eoa using the distribution contract
+        voteEscrow.increase_unlock_time(voteEscrow.locked__end(eoa1) + 365 days); //extends the lock from lockDistribution() 1 more year
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());
 
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
         
         cheats.warp(voteEscrow.locked__end(eoa1) + 1 days);
         emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
 
-        voteEscrow.withdraw();
+        voteEscrow.withdraw(); //withdraw veBAO to BAO
+        assertEq(voteEscrow.totalSupply(), 0);
+        assertEq(voteEscrow.balanceOf(eoa1), 0);
 
-        baoToken.approve(address(voteEscrow), baoToken.balanceOf(eoa1));
-        voteEscrow.create_lock(baoToken.balanceOf(eoa1), block.timestamp + 21 days);
+        baoToken.approve(address(voteEscrow), baoToken.balanceOf(eoa1)); //eoa1 approves ve contract
+        voteEscrow.create_lock(baoToken.balanceOf(eoa1), block.timestamp + 21 days); //eoa1 calls create_lock() inside the voting escrow contract to create another 
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());              //lock without the distribution contract this time at 3 weeks in length
         
         cheats.warp(block.timestamp + 7 days);
-        voteEscrow.increase_unlock_time(block.timestamp + 365 days);
+        voteEscrow.increase_unlock_time(block.timestamp + 365 days); //eoa1 increases the unlock time again for the lock made with create_lock() above
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());
 
         cheats.stopPrank();
     }
+
+    function testLockDistrToVeFunction2() public { 
+        cheats.startPrank(eoa1, eoa1);
+
+        distribution.startDistribution(proof1, amount1);
+        assertEq(distribution.claimable(eoa1, 0), 0);
+
+        cheats.warp(block.timestamp + 1 days); //forward 1 day after startDistribution() call
+
+        //lock using distribution contract lock option into voting escrow for 3 years
+        distribution.lockDistribution(block.timestamp + 94608000);  //distr calls vote escrow | 4yr = 126144000 | 3 yr = 94608000
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());
+        cheats.warp(block.timestamp + 3 days);
+
+        //call the vote escrow function, increase_unlock_time(), from eoa1 after lockDistribution() call creates the lock on behalf of the eoa using the distribution contract
+        voteEscrow.increase_unlock_time(voteEscrow.locked__end(eoa1) + 365 days); //extends the lock from lockDistribution() 1 more year
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());
+
+        emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
+        
+        cheats.warp(voteEscrow.locked__end(eoa1) + 1 days);
+        emit log_named_uint("ve balance for eoa1", voteEscrow.balanceOf(eoa1));
+
+        voteEscrow.withdraw(); //withdraw veBAO to BAO
+        assertEq(voteEscrow.totalSupply(), 0);
+        assertEq(voteEscrow.balanceOf(eoa1), 0);
+
+        baoToken.approve(address(voteEscrow), baoToken.balanceOf(eoa1)); //eoa1 approves ve contract
+        voteEscrow.create_lock(baoToken.balanceOf(eoa1) / 2, block.timestamp + 21 days); //eoa1 calls create_lock() inside the voting escrow contract to create another 
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());              //lock without the distribution contract this time at 3 weeks in length
+        
+        cheats.warp(block.timestamp + 7 days);
+        voteEscrow.increase_amount(baoToken.balanceOf(eoa1)); //eoa1 increases the unlock amount for the lock made with create_lock() above
+        assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply());
+
+        cheats.stopPrank();
+    }
+
+    function testLockDistrFuzz(uint256 _time) public {
+        cheats.assume(_time >= block.timestamp + 94608000 && _time <= block.timestamp + 126144000); //fuzzing the full range of accepted time inputs in lockDistribution()
+        cheats.startPrank(eoa1, eoa1);
+
+        emit log_named_uint("token balance before lock", baoToken.balanceOf(eoa1)); 
+
+        distribution.startDistribution(proof1, amount1); //start distribution for eoa 1
+        assertEq(distribution.claimable(eoa1, 0), 0); //assert 0 claimable as no time has passed
+        assertEq(voteEscrow.totalSupply(), 0); //no locks yet, should be 0
+
+        cheats.warp(block.timestamp + 1);
+
+        distribution.lockDistribution(_time); //eoa1 locks for n years
+
+        emit log_named_uint("ve balance after lock", voteEscrow.balanceOf(eoa1));
+        emit log_named_uint("token balance after lock", baoToken.balanceOf(eoa1));
+
+        cheats.warp(_time + 1);
+        emit log_named_uint("ve balance after expiry", voteEscrow.balanceOf(eoa1));
+
+        voteEscrow.withdraw(); //withdraw veBAO to BAO
+
+        emit log_named_uint("ve balance after withdraw", voteEscrow.balanceOf(eoa1));
+        emit log_named_uint("token balance after withdraw", baoToken.balanceOf(eoa1));
+
+        //token balance after withdraw is equal to amount1 / 1000, which is the correct owed amount
+
+        cheats.stopPrank();
+
+    }
+
 
     // -------------------------------
     // HELPERS
