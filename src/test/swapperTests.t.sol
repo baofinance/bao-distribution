@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.13;
+/*pragma solidity >=0.8.13;
 
 import "ds-test/test.sol";
 import "../../lib/utils/Console.sol";
@@ -23,7 +23,7 @@ interface Cheats {
     function assume(bool condition) external;
 }
 
-contract LockDistributionTest is DSTest {
+contract SwapperTest is DSTest {
 
     Cheats public cheats;
 
@@ -31,7 +31,7 @@ contract LockDistributionTest is DSTest {
 
     IERC20BAO public baoToken;
     IVotingEscrow public voteEscrow;
-    IGaugeController public gaugeC;
+    IGaugeController public gaugeControl;
     IMinter public minter;
     BaoDistribution public distribution;
     Swapper public swap;
@@ -55,13 +55,13 @@ contract LockDistributionTest is DSTest {
         );
 
         //Deploy Gauge Controller for the minter
-        gaugeC = new IGaugeController(
+        gaugeControl = new IGaugeController(
             vyperDeployer.deployVy0_2_4("GaugeController", abi.encode(address(baoToken), address(voteEscrow)))
         );
 
         //Deploy Minter contract
         minter = new IMinter(
-            vyperDeployer.deployVy0_2_4("Minter", abi.encode(address(baoToken), address(gaugeC), address(vyperDeployer)))
+            vyperDeployer.deployVy0_2_4("Minter", abi.encode(address(baoToken), address(gaugeControl), address(vyperDeployer)))
         );
 
         //deploy distribution contract with snapshot merkle root
@@ -91,4 +91,4 @@ contract LockDistributionTest is DSTest {
     //function testSwapper() public {} TODO
 
 
-}
+}*/

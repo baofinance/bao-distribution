@@ -29,7 +29,6 @@ event MintedOnSwap:
 
 token: public(address)
 controller: public(address)
-future_swapper_contract: public(address)
 swapper_contract: public(address)
 admin: public(address)
 
@@ -48,23 +47,13 @@ def __init__(_token: address, _controller: address, _admin: address):
 
 
 @external
-def commit_swapper_contract(addr: address):
+def apply_swapper_contract(addr: address):
     """
     @notice Commit swapper contract
     """
     assert msg.sender == self.admin
-    self.future_swapper_contract = addr
-
-
-@external
-def apply_swapper_contract():
-    """
-    @notice Apply swapper contract
-    """
-    assert msg.sender == self.admin
-    _swapper: address = self.future_distr_contract
-    assert _swapper != ZERO_ADDRESS   # swapper contract not set
-    self.swapper_contract = self.future_swapper_contract
+    assert addr != ZERO_ADDRESS   # set once
+    self.swapper_contract = addr
 
 
 @internal
@@ -99,7 +88,7 @@ def swap_mint(_for: address, _amount: uint256):
     @notice Mint everything which belongs to `msg.sender` and send to them
     @param gauge_addr `LiquidityGauge` address to get mintable amount from
     """
-    assert(msg.sender == self.swapper)
+    assert(msg.sender == self.swapper_contract)
     MERC20(self.token).mint(_for, _amount)
     log MintedOnSwap(_for, _amount)
 

@@ -8,7 +8,10 @@ import "solmate/utils/FixedPointMathLib.sol";
 
 import "../IERC20BAO.sol";
 import "../IVotingEscrow.sol";
+import "../IGaugeController.sol";
+import "../IMinter.sol";
 import "../BaoDistribution.sol";
+import "../Swapper.sol";
 import "../SmartWalletWhitelist.sol";
 
 interface Cheats {
@@ -30,11 +33,15 @@ contract LockDistributionTest is DSTest {
 
     IERC20BAO public baoToken;
     IVotingEscrow public voteEscrow;
+    IGaugeController public gaugeControl;
+    IMinter public minter;
     BaoDistribution public distribution;
+    Swapper public swap;
     SmartWalletWhitelist public whitelist;
 
     address public eoa1 = 0x48B72465FeD54964a9a0bb2FB95DBc89571604eC;
     address public eoa2 = 0x609991ca0Ae39BC4EAF2669976237296D40C2F31;
+    address public eoaTest;
 
     bytes32[] public proof1;
     uint256 public amount1 = 53669753833360467444414559923;
@@ -47,6 +54,7 @@ contract LockDistributionTest is DSTest {
         cheats.deal(address(this), 1000 ether);
         cheats.deal(eoa1, 1000 ether);
         cheats.deal(eoa2, 1000 ether);
+        //cheats.deal(eoaTest, 1000 ether);
 
         //Deploy BAOv2 token contract
         baoToken = IERC20BAO(
@@ -58,6 +66,16 @@ contract LockDistributionTest is DSTest {
             vyperDeployer.deployVy0_2_4("VotingEscrow", abi.encode(address(baoToken), "Vote Escrowed BAO", "veBAO", "0.2.4"))
         );
 
+        //Deploy Gauge Controller for the minter
+        gaugeControl = new IGaugeController(
+            vyperDeployer.deployContract("GaugeController", abi.encode(address(baoToken), address(voteEscrow)))
+        );
+
+        //Deploy Minter contract
+        //minter = new IMinter(
+        //    vyperDeployer.deployVy0_2_4("Minter", abi.encode(address(baoToken), address(gaugeControl), address(vyperDeployer)))
+        //);
+
         //deploy distribution contract with snapshot merkle root
         cheats.prank(address(vyperDeployer));
         distribution = new BaoDistribution(
@@ -66,6 +84,10 @@ contract LockDistributionTest is DSTest {
             0x41c02385a07002f9d8fd88c8fb950c308c6f7bf7c748b57ae9b892e291900363,
             address(this)
         );
+
+        //deploy Swapper contract
+        cheats.prank(address(vyperDeployer));
+        swap = new Swapper(address(minter));
 
         //deploy whitelist
         whitelist = new SmartWalletWhitelist(
@@ -139,13 +161,12 @@ contract LockDistributionTest is DSTest {
         emit log_named_uint("ve balance after lock", voteEscrow.balanceOf(eoa1));
         emit log_named_uint("token balance after lock", baoToken.balanceOf(eoa1));
 
-        /* assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve math but 4 years puts them almost 1:1)
-        * 1 BAO locked for 4 years = ~1 veBAO, where veBAO is less than BAO balance
-        * 53669753833360461448429661, tokensLeft calculation from distribution
-        * 53418898874984233935234217, actual ve Balance after the lock call
-        * 0                           circulating balance before lock
-        * 0                           circulating balance after lock
-        */
+        // assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve math but 4 years puts them almost 1:1)
+        // 1 BAO locked for 4 years = ~1 veBAO, where veBAO is less than BAO balance
+        // 53669753833360461448429661, tokensLeft calculation from distribution
+        // 53418898874984233935234217, actual ve Balance after the lock call
+        // 0                           circulating balance before lock
+        // 0                           circulating balance after lock
 
         cheats.warp(block.timestamp + 126144001);
         emit log_named_uint("ve balance after expiry", voteEscrow.balanceOf(eoa1));
@@ -232,14 +253,13 @@ contract LockDistributionTest is DSTest {
 
         assertEq(voteEscrow.balanceOf(eoa1), voteEscrow.totalSupply()); //assert eoa1 balance is total supply as its the only lock in existence
 
-        /* assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve math but 4 years puts them almost 1 to 1)
-        * 1 BAO locked for 4 years = ~1 veBAO
-        * 47706447473685581843456469, tokensLeft calculation from distribution
-        * 47679519183957423258749371, actual ve Balance after the lock call
-        * 0                           circulating balance before claim
-        * 5963305981484495189574468,  circulating balance after claim
-        * 47706447473685581843456469 (distr amount locked) + 5963305981484495189574468 (distr amount claimed) = total
-        */
+        // assert tokens left in distribution is the same as vote escrow balance (output is not exact because of ve math but 4 years puts them almost 1 to 1)
+        // 1 BAO locked for 4 years = ~1 veBAO
+        // 47706447473685581843456469, tokensLeft calculation from distribution
+        // 47679519183957423258749371, actual ve Balance after the lock call
+        // 0                           circulating balance before claim
+        // 5963305981484495189574468,  circulating balance after claim
+        // 47706447473685581843456469 (distr amount locked) + 5963305981484495189574468 (distr amount claimed) = total
 
         emit log_named_uint("total theorhetical balance", amount1 / 1000);
         emit log_named_uint("total realized balance with an active lock at 4 years", voteEscrow.balanceOf(eoa1) + baoToken.balanceOf(eoa1));
