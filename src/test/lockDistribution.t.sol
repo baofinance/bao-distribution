@@ -5,11 +5,10 @@ import "ds-test/test.sol";
 import "../../lib/utils/Console.sol";
 import "../../lib/utils/VyperDeployer.sol";
 import "solmate/utils/FixedPointMathLib.sol";
+import "solmate/tokens/ERC20.sol";
 
 import "../IERC20BAO.sol";
 import "../IVotingEscrow.sol";
-import "../IGaugeController.sol";
-import "../IMinter.sol";
 import "../BaoDistribution.sol";
 import "../Swapper.sol";
 import "../SmartWalletWhitelist.sol";
@@ -33,15 +32,14 @@ contract LockDistributionTest is DSTest {
 
     IERC20BAO public baoToken;
     IVotingEscrow public voteEscrow;
-    IGaugeController public gaugeControl;
-    IMinter public minter;
     BaoDistribution public distribution;
     Swapper public swap;
     SmartWalletWhitelist public whitelist;
+    ERC20 public baoV1;
 
     address public eoa1 = 0x48B72465FeD54964a9a0bb2FB95DBc89571604eC;
     address public eoa2 = 0x609991ca0Ae39BC4EAF2669976237296D40C2F31;
-    address public eoaTest;
+    address public eoaTest = 0xD1AE4d9205F07333916f628850Fc79f1366dC2F8;
 
     bytes32[] public proof1;
     uint256 public amount1 = 53669753833360467444414559923;
@@ -54,7 +52,10 @@ contract LockDistributionTest is DSTest {
         cheats.deal(address(this), 1000 ether);
         cheats.deal(eoa1, 1000 ether);
         cheats.deal(eoa2, 1000 ether);
-        //cheats.deal(eoaTest, 1000 ether);
+        cheats.deal(eoaTest, 1000 ether);
+        
+        //set baov1
+        baoV1 = ERC20(0x374CB8C27130E2c9E04F44303f3c8351B9De61C1);
 
         //Deploy BAOv2 token contract
         baoToken = IERC20BAO(
@@ -65,16 +66,6 @@ contract LockDistributionTest is DSTest {
         voteEscrow = IVotingEscrow(
             vyperDeployer.deployVy0_2_4("VotingEscrow", abi.encode(address(baoToken), "Vote Escrowed BAO", "veBAO", "0.2.4"))
         );
-
-        //Deploy Gauge Controller for the minter
-        gaugeControl = new IGaugeController(
-            vyperDeployer.deployContract("GaugeController", abi.encode(address(baoToken), address(voteEscrow)))
-        );
-
-        //Deploy Minter contract
-        //minter = new IMinter(
-        //    vyperDeployer.deployVy0_2_4("Minter", abi.encode(address(baoToken), address(gaugeControl), address(vyperDeployer)))
-        //);
 
         //deploy distribution contract with snapshot merkle root
         cheats.prank(address(vyperDeployer));
@@ -87,7 +78,7 @@ contract LockDistributionTest is DSTest {
 
         //deploy Swapper contract
         cheats.prank(address(vyperDeployer));
-        swap = new Swapper(address(minter));
+        swap = new Swapper(address(baoToken));
 
         //deploy whitelist
         whitelist = new SmartWalletWhitelist(
@@ -124,10 +115,20 @@ contract LockDistributionTest is DSTest {
         proof2.push(0x9d7ff74eec600ac6ffe42f02d4ae6b16219c714e02a535e853850ba9e7677878);
         proof2.push(0x4b7feb1f0234422835771be9152c527c22a60ca378ce2fc7f350c1aa8e115032);
 
+        emit log_named_uint("admin balance before", baoToken.balanceOf(address(vyperDeployer)));
+        //1500000000000000000000000000
+
         //transfer initial supply after farms end to the distribution contract
         cheats.prank(address(vyperDeployer));
-        baoToken.transfer(address(distribution), 15e26);
-        assertEq(baoToken.balanceOf(address(distribution)), 15e26);
+        baoToken.transfer(address(distribution), 12e26);
+        emit log_named_uint("admin balance after 1.2B", baoToken.balanceOf(address(vyperDeployer)));
+        //300000000000000000000000000
+        cheats.prank(address(vyperDeployer));
+        baoToken.transfer(address(swap), 3e26);
+        emit log_named_uint("admin balance should be 0", baoToken.balanceOf(address(vyperDeployer)));
+        emit log_named_uint("distr balance received", baoToken.balanceOf(address(distribution)));
+        emit log_named_uint("swapper balance received", baoToken.balanceOf(address(swap)));
+        assertEq(baoToken.balanceOf(address(distribution)), 12e26);
 
         //commit and apply distribution contract to the voting escrow contract
         cheats.prank(address(vyperDeployer));
@@ -381,6 +382,36 @@ contract LockDistributionTest is DSTest {
         emit log_named_uint("token balance after withdraw", baoToken.balanceOf(eoa1));
 
         //token balance after withdraw is equal to amount1 / 1000, which is the correct owed amount
+
+        cheats.stopPrank();
+    }
+
+    // -------------------------------
+    // SWAPPER TESTS
+    // -------------------------------
+
+    function testSwap() public {
+        cheats.startPrank(eoaTest, eoaTest);
+
+        emit log_named_uint("baov2 token balance of swapper before", baoToken.balanceOf(address(swap))); //300000000000000000000000000
+        emit log_named_uint("baov1 token balance of eoaTest before", baoV1.balanceOf(address(eoaTest))); //249891825684763220910719509
+        emit log_named_int("expected baov2 token balance of eoaTest", 249891825684763220910719); //      249891825684763220910719 | 249891825684763220910719509 / 1000
+
+        //baoToken.approve(address(swap), baoV1.balanceOf(eoaTest));
+        //approve: 249891825684763220910719509
+        baoV1.approve(address(swap), baoV1.balanceOf(eoaTest));
+        swap.convertV1(eoaTest, baoV1.balanceOf(eoaTest));
+        
+        emit log_named_uint("token balance of swapper after", baoToken.balanceOf(address(swap)));
+        emit log_named_uint("baoV2 token balance of eoaTest", baoToken.balanceOf(eoaTest));
+        emit log_named_uint("baoV1 balance of eoaTest", baoV1.balanceOf(eoaTest));
+        emit log_named_uint("baov2 token balance of swapper after", baoToken.balanceOf(address(swap)));
+
+        assert(300000000000000000000000000 - baoToken.balanceOf(address(swap)) == baoToken.balanceOf(eoaTest));
+
+        //249,891,825.684763220910719509 baoV1
+        //249,891.825684763220910719    expected baoV2
+        //249,891.825684763220910719    actual baoV2
 
         cheats.stopPrank();
     }

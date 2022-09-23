@@ -57,7 +57,7 @@ YEAR: constant(uint256) = 86400 * 365
 # supply left for inflation: Y% || **(X + Y = 100%)**
 
 # Supply parameters
-INITIAL_SUPPLY_CAP: constant(uint256) = 1_500_000_000 #test value
+INITIAL_SUPPLY_CAP: constant(uint256) = 1_500_000_000 # locked supply + circulating at farm ending ~1.12T + 175B = 1.3T
 INITIAL_RATE: constant(uint256) = 274_815_283 * 10 ** 18 / YEAR #X% premine test value, think its close to ~49.5% here
 RATE_REDUCTION_TIME: constant(uint256) = YEAR
 RATE_REDUCTION_COEFFICIENT: constant(uint256) = 1189207115002721024  #2 ** (1/4) * 1e18
@@ -309,8 +309,15 @@ def mint(_to: address, _value: uint256) -> bool:
     @param _value The amount that will be created
     @return bool success
     """
-    assert (msg.sender == self.minter or msg.sender == self.swapper)  # dev: minter and swapper only
+    assert (msg.sender == self.minter or msg.sender == self.swapper)  # dev: minter or swapper only
     assert _to != ZERO_ADDRESS  # dev: zero address
+
+    if msg.sender == self.swapper:
+        _new_total_supply: uint256 = self.totalSupply + _value
+        self.totalSupply = _new_total_supply
+        self.balanceOf[_to] += _value
+        log Transfer(ZERO_ADDRESS, _to, _value)
+        return True
 
     if block.timestamp >= self.start_epoch_time + RATE_REDUCTION_TIME:
         self._update_mining_parameters()
