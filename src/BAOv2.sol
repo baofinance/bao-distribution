@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-//THIS IS A TEST ERC20 CONTRACT FOR "BaoDistribution.t.sol"
+//THIS IS A TEST/MOCK ERC20 CONTRACT FOR "BaoDistribution.t.sol"
 //THE actual BAOv2 token contract is a vyper contract "ERC20BAO.vy"
 
 pragma solidity ^0.8.13;
