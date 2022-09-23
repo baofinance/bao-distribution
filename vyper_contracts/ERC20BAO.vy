@@ -220,10 +220,9 @@ def mintable_in_timeframe(start: uint256, end: uint256) -> uint256:
 @external
 def set_minter(_minter: address):
     """
-    @notice Set the minter address and swap migration address
-    @dev Only callable once, when the minter and swapper contract have not yet been set
+    @notice Set the minter address
+    @dev Only callable once, when the minter has not yet been set
     @param _minter Address of the minter
-    @param _swapper Address of the swapper
     """
     assert msg.sender == self.admin  # dev: admin only
     assert self.minter == ZERO_ADDRESS  # dev: can set the minter only once, at creation
