@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-/*pragma solidity ^0.8.13;
+pragma solidity ^0.8.13;
 
 import "ds-test/test.sol";
 import "../BAOv2.sol";
@@ -184,4 +184,4 @@ contract BaoDistributionTest is DSTest {
     function _toDays(uint256 d) private pure returns (uint256) {
         return FixedPointMathLib.mulDivDown(d, 1e18, 86400);
     }
-}*/
+}
