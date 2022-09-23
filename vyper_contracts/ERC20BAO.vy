@@ -30,7 +30,6 @@ event UpdateMiningParameters:
 
 event SetMinter:
     minter: address
-    swapper: address
 
 event SetAdmin:
     admin: address
@@ -44,7 +43,6 @@ allowance: public(HashMap[address, HashMap[address, uint256]])
 totalSupply: public(uint256)
 
 minter: public(address)
-swapper: public(address)
 admin: public(address)
 
 # General constants
@@ -229,10 +227,8 @@ def set_minters(_minter: address, _swapper: address):
     """
     assert msg.sender == self.admin  # dev: admin only
     assert self.minter == ZERO_ADDRESS  # dev: can set the minter only once, at creation
-    assert self.swapper == ZERO_ADDRESS # dev: can set the swap migration contract only once, at creation
     self.minter = _minter
-    self.swapper = _swapper
-    log SetMinter(_minter, _swapper)
+    log SetMinter(_minter)
 
 
 @external
@@ -309,15 +305,8 @@ def mint(_to: address, _value: uint256) -> bool:
     @param _value The amount that will be created
     @return bool success
     """
-    assert (msg.sender == self.minter or msg.sender == self.swapper)  # dev: minter or swapper only
+    assert (msg.sender == self.minter)  # dev: minter only
     assert _to != ZERO_ADDRESS  # dev: zero address
-
-    if msg.sender == self.swapper:
-        _new_total_supply: uint256 = self.totalSupply + _value
-        self.totalSupply = _new_total_supply
-        self.balanceOf[_to] += _value
-        log Transfer(ZERO_ADDRESS, _to, _value)
-        return True
 
     if block.timestamp >= self.start_epoch_time + RATE_REDUCTION_TIME:
         self._update_mining_parameters()

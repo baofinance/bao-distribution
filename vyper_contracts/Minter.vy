@@ -25,7 +25,6 @@ event Minted:
 
 token: public(address)
 controller: public(address)
-admin: public(address)
 
 # user -> gauge -> value
 minted: public(HashMap[address, HashMap[address, uint256]])
@@ -35,10 +34,9 @@ allowed_to_mint_for: public(HashMap[address, HashMap[address, bool]])
 
 
 @external
-def __init__(_token: address, _controller: address, _admin: address):
+def __init__(_token: address, _controller: address):
     self.token = _token
     self.controller = _controller
-    self.admin = _admin
 
 
 @internal
