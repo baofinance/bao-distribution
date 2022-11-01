@@ -1,0 +1,24 @@
+specVersion: 0.0.4
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: BaoToken
+    network: mainnet
+    source:
+      address: "0x374CB8C27130E2c9E04F44303f3c8351B9De61C1"
+      abi: BaoToken
+      startBlock: 11368530
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Lock
+      abis:
+        - name: BaoToken
+          file: ./abis/BaoToken.json
+      eventHandlers:
+        - event: Lock(indexed address,uint256)
+          handler: handleLock
+      file: ./src/bao-token.ts

@@ -5,13 +5,14 @@ export type Account = {
 
 export type SubgraphAccount = {
   id: string
-  amountOwed: string
+  address: string
+  amount: string
 }
 
 export type SubgraphResult = {
   data: {
     data: {
-      accounts: SubgraphAccount[]
+      users: SubgraphAccount[]
     }
     errors?: any[]
   }
