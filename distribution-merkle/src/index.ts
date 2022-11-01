@@ -8,6 +8,8 @@ import chalk from 'chalk'
 // MERKLE ROOT GENERATION
 // -------------------------------
 
+const args = process.argv.slice(2)
+
 const generateMerkleRoot = () => {
   const snapshot: Account[] =
     JSON.parse(fs.readFileSync(`${__dirname}/../snapshot.json`).toString())
@@ -18,14 +20,26 @@ const generateMerkleRoot = () => {
   console.log(`${chalk.greenBright('Merkle Root:')} 0x${root}`)
 
   console.log('-------------------------------------------------------------------------------')
+  let account: Account
+  if (args[0]) {
+    account = snapshot.find((item) => {
+      return item.address.toLowerCase() === args[0].toLowerCase()
+    })
+    if (!account) {
+      throw new Error(`!! Account ${args[0]} not in snapshot.`)
+    }
+  } else {
+    account = snapshot[1]
+  }
 
-  const leaf = _keccakAbiEncode(snapshot[1].address, snapshot[1].amount)
+  const leaf = _keccakAbiEncode(account.address, account.amount)
   const proof = tree.getHexProof(leaf)
   console.log(
-    `${chalk.cyanBright('Sample proof of inclusion for address')} "${
-      chalk.yellowBright(snapshot[1].address)
-    }": ${JSON.stringify(proof)}`
+    `${chalk.cyanBright('Proof of inclusion for address')} "${
+      chalk.yellowBright(account.address)
+    }": ${JSON.stringify(proof, null, 2)}`
   )
+
   console.log(`Is proof valid?: ${tree.verify(proof, leaf, root) ? chalk.greenBright('Yes') : chalk.red('No')}`) // should always be yes!
 }
 
