@@ -38,20 +38,27 @@ contract LockDistributionTest is DSTest {
     ERC20 public baoV1;
 
     address public eoa1 = 0x48B72465FeD54964a9a0bb2FB95DBc89571604eC;
-    address public eoa2 = 0x609991ca0Ae39BC4EAF2669976237296D40C2F31;
     address public eoaTest = 0xD1AE4d9205F07333916f628850Fc79f1366dC2F8;
+
+    address public dev_wallet = 0x8f5d46FCADEcA93356B70F40858219bB1FBf6088;
+    address public liq_wallet = 0x3f3243E7776122B1b968b5E74B3DdB971FBed9de;
+    address public community_wallet = 0x609991ca0Ae39BC4EAF2669976237296D40C2F31;
 
     bytes32[] public proof1;
     uint256 public amount1 = 53669753833360467444414559923;
-    bytes32[] public proof2;
-    uint256 public amount2 = 44599721927768192099018289499;
+
+    bytes32[] public dev_proof;
+    uint256 public dev_amount = 42326858440355495550732761394; 
+    bytes32[] public liq_proof;
+    uint256 public liq_amount = 15741078327447597211418129471;
+    bytes32[] public community_proof;
+    uint256 public community_amount = 44599721927768192099018289499;
     
     function setUp() public {
         cheats = Cheats(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
 
         cheats.deal(address(this), 1000 ether);
         cheats.deal(eoa1, 1000 ether);
-        cheats.deal(eoa2, 1000 ether);
         cheats.deal(eoaTest, 1000 ether);
         
         //set baov1
@@ -72,7 +79,7 @@ contract LockDistributionTest is DSTest {
         distribution = new BaoDistribution(
             address(baoToken),
             address(voteEscrow),
-            0x41c02385a07002f9d8fd88c8fb950c308c6f7bf7c748b57ae9b892e291900363,
+            0x94c1a07097af949d6a6782e3d5b83144426ca57424eb129fc75d7781ea007b80,
             address(this)
         );
 
@@ -87,33 +94,61 @@ contract LockDistributionTest is DSTest {
         );
 
         //store merkle proofs
-        proof1.push(0x7c55d8a6ded3b13b342fc383df5bb934076f49a6598303ea68ea78ae4630d445);
-        proof1.push(0x44db9ee999de8b628c5de2592b347008ebd4e77b94f4ef1d121a4aca6e8e8d51);
-        proof1.push(0xb6a829733a6f85d368893b416f8a967e2189681368d3788134eee3c5bf22e976);  
-        proof1.push(0xb0232903c4ba9256861d60a6ca9d933cb8db387d8a6cecc1cbc178e5d91eacf5);
-        proof1.push(0x7643968dd707041b7737a52d1fee41fe8ee37ada29585e37b92a090cb91ae86a);  
-        proof1.push(0x3c0d2d3a207e8e01f4c7442bfa1adbfd25ba072c213bc8406a182fb61cb78401);
-        proof1.push(0x0afca7cc1288693408e2857ddec8b2b4dea74215f0b9219421773ab0b31b8a11);  
-        proof1.push(0x8310cf070515dcb50f13259a1f5cf52c6bd7db2f3004525eaf17c6335ccd333c);
-        proof1.push(0xbe44074166d23ae6832865be9972f4f3776a903e1a5e9e2c1780313fe629dfa3);  
-        proof1.push(0xbaba52a8a741481583014f906912d7870d53fd776fb6529ec6fca8af2b6877d0);
-        proof1.push(0x74e8548f3229e22c31e75e2f80ac2757237cc8b435d3658438927bfa891b9763);
-        proof1.push(0x9d7ff74eec600ac6ffe42f02d4ae6b16219c714e02a535e853850ba9e7677878);
-        proof1.push(0x4b7feb1f0234422835771be9152c527c22a60ca378ce2fc7f350c1aa8e115032);
+        proof1.push(0x7c3ac7455005dcd76d3cd38b4dbc59436ed10518b4bf13c8d339e19ad7ad9182);
+        proof1.push(0x63c24f74f56ff175222c700f7cb2245efb76261c8a837257d0acef1ade318a52);
+        proof1.push(0x447b543c7f1c2c63e9ac5d0a588ad1e9d993b206d57594464dda381809589b13);  
+        proof1.push(0x8a61f36e561c00e321707b88eda40f7779ec8d63c1a26c2c695fb74474e96e0f);
+        proof1.push(0x31ab762b645a50038973245d1ba4dbac71350f4f68de39fff1c8cfbc279d255c);  
+        proof1.push(0x09593f06d7c4d67426e6449f3c5f517660537edd6fac422c675d1623867667ba);
+        proof1.push(0x6268964c0a64711b834d8d9373ad4591f90e259afe9fd63048ad18d3900bbe5d);  
+        proof1.push(0xa60abf2a5dc406f7d0e38ba7927b4f0b8f7c00e11d24157c7cb109df487f8b27);
+        proof1.push(0xacd04cdd0680e67386f8dda62559861f2e018479cb5e2aecbead3c327813be2d);  
+        proof1.push(0xc946365c87d8e929913b147ffb95b45a28220ed964846ec8636b2ea7b1b3e8a1);
+        proof1.push(0x926dc27cd416e15363595915ec5ca22a005a5f02be7480c5860b7be97de6d9f0);
+        proof1.push(0x16a2e7d223f638cabe4c7e58878ec7dfced40021795eaf1c052c40da529c7698);
+        proof1.push(0xde5745fc234d2a9bc5f8ee2a8e7704266a16b02d3c0f10a0339b34f6b8105969);
 
-        proof2.push(0x61120ad1ad69e9dd4a8d0e4d2d72006872704ad09437e8b1124c6c6fd4cbcc62);
-        proof2.push(0xf16a00483fdd6b232b1f8dc1d38f2d7736f6326fb498207fadd565a15ac799c6);
-        proof2.push(0xf72e7bd6f83b1718aebfd662c53f91d4d725f3a3a64dce05fa79a5cd4087c0a2);
-        proof2.push(0xeb1b599fcd9f71c9248aff66751e0b491a8cf782e043f8120dc0793afe48ac54);
-        proof2.push(0xed8b77dc630a5538c387930f522ab42202582fa0c0f899cebb17504eb31a28ac);
-        proof2.push(0x33f6a6cd5c4266276c16d988bf0ae11a5665832a4edeec1e4421148b7a3224a8);
-        proof2.push(0x978e16008e26fc2e5f05d2416a29a90b9ef351adbf3c45f5bd905d91ecbac340);
-        proof2.push(0x91c2521e2283a0671b6bfd8b3d0b042484750c7e8a44f4a828b14a4efca87c8d);
-        proof2.push(0xcad3ba78a0da6131dd8a1ad22c81b15f85cc327a86317372f465361afcb2f34a);
-        proof2.push(0x9590cb84d66eed07dd9556fbc7ba6aae3f1864bd0db0a704c40a2b11489f8464);
-        proof2.push(0x56c84b5ef64065935078154d1631bda16d44c06db4abd19aac7bd420feccaab2);
-        proof2.push(0x9d7ff74eec600ac6ffe42f02d4ae6b16219c714e02a535e853850ba9e7677878);
-        proof2.push(0x4b7feb1f0234422835771be9152c527c22a60ca378ce2fc7f350c1aa8e115032);
+        dev_proof.push(0x7c3ac7455005dcd76d3cd38b4dbc59436ed10518b4bf13c8d339e19ad7ad9182);
+        dev_proof.push(0x63c24f74f56ff175222c700f7cb2245efb76261c8a837257d0acef1ade318a52);
+        dev_proof.push(0x447b543c7f1c2c63e9ac5d0a588ad1e9d993b206d57594464dda381809589b13);  
+        dev_proof.push(0x8a61f36e561c00e321707b88eda40f7779ec8d63c1a26c2c695fb74474e96e0f);
+        dev_proof.push(0x31ab762b645a50038973245d1ba4dbac71350f4f68de39fff1c8cfbc279d255c);  
+        dev_proof.push(0x09593f06d7c4d67426e6449f3c5f517660537edd6fac422c675d1623867667ba);
+        dev_proof.push(0x6268964c0a64711b834d8d9373ad4591f90e259afe9fd63048ad18d3900bbe5d);  
+        dev_proof.push(0xa60abf2a5dc406f7d0e38ba7927b4f0b8f7c00e11d24157c7cb109df487f8b27);
+        dev_proof.push(0xacd04cdd0680e67386f8dda62559861f2e018479cb5e2aecbead3c327813be2d);  
+        dev_proof.push(0xc946365c87d8e929913b147ffb95b45a28220ed964846ec8636b2ea7b1b3e8a1);
+        dev_proof.push(0x926dc27cd416e15363595915ec5ca22a005a5f02be7480c5860b7be97de6d9f0);
+        dev_proof.push(0x16a2e7d223f638cabe4c7e58878ec7dfced40021795eaf1c052c40da529c7698);
+        dev_proof.push(0xde5745fc234d2a9bc5f8ee2a8e7704266a16b02d3c0f10a0339b34f6b8105969);
+
+        liq_proof.push(0x7c3ac7455005dcd76d3cd38b4dbc59436ed10518b4bf13c8d339e19ad7ad9182);
+        liq_proof.push(0x63c24f74f56ff175222c700f7cb2245efb76261c8a837257d0acef1ade318a52);
+        liq_proof.push(0x447b543c7f1c2c63e9ac5d0a588ad1e9d993b206d57594464dda381809589b13);  
+        liq_proof.push(0x8a61f36e561c00e321707b88eda40f7779ec8d63c1a26c2c695fb74474e96e0f);
+        liq_proof.push(0x31ab762b645a50038973245d1ba4dbac71350f4f68de39fff1c8cfbc279d255c);  
+        liq_proof.push(0x09593f06d7c4d67426e6449f3c5f517660537edd6fac422c675d1623867667ba);
+        liq_proof.push(0x6268964c0a64711b834d8d9373ad4591f90e259afe9fd63048ad18d3900bbe5d);  
+        liq_proof.push(0xa60abf2a5dc406f7d0e38ba7927b4f0b8f7c00e11d24157c7cb109df487f8b27);
+        liq_proof.push(0xacd04cdd0680e67386f8dda62559861f2e018479cb5e2aecbead3c327813be2d);  
+        liq_proof.push(0xc946365c87d8e929913b147ffb95b45a28220ed964846ec8636b2ea7b1b3e8a1);
+        liq_proof.push(0x926dc27cd416e15363595915ec5ca22a005a5f02be7480c5860b7be97de6d9f0);
+        liq_proof.push(0x16a2e7d223f638cabe4c7e58878ec7dfced40021795eaf1c052c40da529c7698);
+        liq_proof.push(0xde5745fc234d2a9bc5f8ee2a8e7704266a16b02d3c0f10a0339b34f6b8105969);
+
+        community_proof.push(0x7c3ac7455005dcd76d3cd38b4dbc59436ed10518b4bf13c8d339e19ad7ad9182);
+        community_proof.push(0x63c24f74f56ff175222c700f7cb2245efb76261c8a837257d0acef1ade318a52);
+        community_proof.push(0x447b543c7f1c2c63e9ac5d0a588ad1e9d993b206d57594464dda381809589b13);  
+        community_proof.push(0x8a61f36e561c00e321707b88eda40f7779ec8d63c1a26c2c695fb74474e96e0f);
+        community_proof.push(0x31ab762b645a50038973245d1ba4dbac71350f4f68de39fff1c8cfbc279d255c);  
+        community_proof.push(0x09593f06d7c4d67426e6449f3c5f517660537edd6fac422c675d1623867667ba);
+        community_proof.push(0x6268964c0a64711b834d8d9373ad4591f90e259afe9fd63048ad18d3900bbe5d);  
+        community_proof.push(0xa60abf2a5dc406f7d0e38ba7927b4f0b8f7c00e11d24157c7cb109df487f8b27);
+        community_proof.push(0xacd04cdd0680e67386f8dda62559861f2e018479cb5e2aecbead3c327813be2d);  
+        community_proof.push(0xc946365c87d8e929913b147ffb95b45a28220ed964846ec8636b2ea7b1b3e8a1);
+        community_proof.push(0x926dc27cd416e15363595915ec5ca22a005a5f02be7480c5860b7be97de6d9f0);
+        community_proof.push(0x16a2e7d223f638cabe4c7e58878ec7dfced40021795eaf1c052c40da529c7698);
+        community_proof.push(0xde5745fc234d2a9bc5f8ee2a8e7704266a16b02d3c0f10a0339b34f6b8105969);
 
         emit log_named_uint("admin balance before", baoToken.balanceOf(address(vyperDeployer)));
         //1500000000000000000000000000
@@ -141,6 +176,36 @@ contract LockDistributionTest is DSTest {
         voteEscrow.commit_smart_wallet_checker(address(whitelist));
         cheats.prank(address(vyperDeployer));
         voteEscrow.apply_smart_wallet_checker();
+    }
+
+
+    // -------------------------------
+    // MERKLE ROOT SNAPSHOT TESTS
+    // -------------------------------
+
+    //old dev wallet :       0x8f5d46FCADEcA93356B70F40858219bB1FBf6088
+    //old Liquidity wallet : 0x3f3243E7776122B1b968b5E74B3DdB971FBed9de
+    //old Community wallet : 0x609991ca0Ae39BC4EAF2669976237296D40C2F31
+
+    function testFailDevWalletProof() public {
+        cheats.startPrank(dev_wallet);
+        emit log_named_uint("token balance before call: ", baoToken.balanceOf(dev_wallet));
+        distribution.startDistribution(dev_proof, dev_amount);
+        cheats.stopPrank();
+    }
+
+    function testFailLiqWalletProof() public {
+        cheats.startPrank(liq_wallet);
+        emit log_named_uint("token balance before call: ", baoToken.balanceOf(dev_wallet));
+        distribution.startDistribution(liq_proof, liq_amount);
+        cheats.stopPrank();
+    }
+
+    function testFailComWalletProof() public {
+        cheats.startPrank(community_wallet);
+        emit log_named_uint("token balance before call: ", baoToken.balanceOf(dev_wallet));
+        distribution.startDistribution(dev_proof, dev_amount);
+        cheats.stopPrank();
     }
 
     // -------------------------------
@@ -284,7 +349,6 @@ contract LockDistributionTest is DSTest {
         emit log_named_address("ve address", address(voteEscrow));
         emit log_named_address("token address", address(baoToken));
         emit log_named_address("eoa1 address", eoa1);
-        emit log_named_address("eoa2 address", eoa2);
 
         cheats.warp(block.timestamp + 1 days); //forward 1 day after startDistribution() call
 

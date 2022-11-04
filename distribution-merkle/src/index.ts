@@ -29,7 +29,7 @@ const generateMerkleRoot = () => {
       throw new Error(`!! Account ${args[0]} not in snapshot.`)
     }
   } else {
-    account = snapshot[1]
+    account = snapshot[0]
   }
 
   const leaf = _keccakAbiEncode(account.address, account.amount)
