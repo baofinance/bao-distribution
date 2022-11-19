@@ -43,6 +43,7 @@ contract LockDistributionTest is DSTest {
     address public dev_wallet = 0x8f5d46FCADEcA93356B70F40858219bB1FBf6088;
     address public liq_wallet = 0x3f3243E7776122B1b968b5E74B3DdB971FBed9de;
     address public community_wallet = 0x609991ca0Ae39BC4EAF2669976237296D40C2F31;
+    address public treasury = 0x3dFc49e5112005179Da613BdE5973229082dAc35;
 
     bytes32[] public proof1;
     uint256 public amount1 = 53669753833360467444414559923;
@@ -79,7 +80,7 @@ contract LockDistributionTest is DSTest {
         distribution = new BaoDistribution(
             address(baoToken),
             address(voteEscrow),
-            0x94c1a07097af949d6a6782e3d5b83144426ca57424eb129fc75d7781ea007b80,
+            0xbc39affb2a6f4c1e539660ab71ae1554d613a42413e154a6223dd7c868432e58, //actual snapshot root
             address(this)
         );
 
@@ -96,17 +97,17 @@ contract LockDistributionTest is DSTest {
         //store merkle proofs
         proof1.push(0x7c3ac7455005dcd76d3cd38b4dbc59436ed10518b4bf13c8d339e19ad7ad9182);
         proof1.push(0x63c24f74f56ff175222c700f7cb2245efb76261c8a837257d0acef1ade318a52);
-        proof1.push(0x447b543c7f1c2c63e9ac5d0a588ad1e9d993b206d57594464dda381809589b13);  
-        proof1.push(0x8a61f36e561c00e321707b88eda40f7779ec8d63c1a26c2c695fb74474e96e0f);
-        proof1.push(0x31ab762b645a50038973245d1ba4dbac71350f4f68de39fff1c8cfbc279d255c);  
-        proof1.push(0x09593f06d7c4d67426e6449f3c5f517660537edd6fac422c675d1623867667ba);
-        proof1.push(0x6268964c0a64711b834d8d9373ad4591f90e259afe9fd63048ad18d3900bbe5d);  
-        proof1.push(0xa60abf2a5dc406f7d0e38ba7927b4f0b8f7c00e11d24157c7cb109df487f8b27);
-        proof1.push(0xacd04cdd0680e67386f8dda62559861f2e018479cb5e2aecbead3c327813be2d);  
-        proof1.push(0xc946365c87d8e929913b147ffb95b45a28220ed964846ec8636b2ea7b1b3e8a1);
-        proof1.push(0x926dc27cd416e15363595915ec5ca22a005a5f02be7480c5860b7be97de6d9f0);
-        proof1.push(0x16a2e7d223f638cabe4c7e58878ec7dfced40021795eaf1c052c40da529c7698);
-        proof1.push(0xde5745fc234d2a9bc5f8ee2a8e7704266a16b02d3c0f10a0339b34f6b8105969);
+        proof1.push(0xc3aa6dc99375c39d4d0f702727627b79bf3bbb304d5db1ad6a5ade9fff7e0747);
+        proof1.push(0xf6721c3a9c6b6c67b761fa7077f839bb03b09690131d05b8b25d0f6e3d531b0e);
+        proof1.push(0xd815d28f757ebb7c5d4a3c1b59bc8a993e3172f5592d2c91163763c2ac7af98a);  
+        proof1.push(0x3fa6b4bafad03d3d9e6c2f8644cd53573e2b3fd7f028c964f982c9649014b465);
+        proof1.push(0x92590ddd183a07dfdc1f2ca598a1895afef2a99c1a97e5f0c5ff38a60dc75087); 
+        proof1.push(0x1349eae8f28e58bb18abca40ac34e4c0ac7a42ebcd6ad0077ef6794ba5af723f);
+        proof1.push(0xcc4644a444b971cab2e874b3987bad9afdaa98b148bcbcae75d51f543ecb002c); 
+        proof1.push(0x059f955408c4bed501bbe3781acce6c1c878753ec1d7d0e7c712ac720f488c0a);
+        proof1.push(0xd1637f0fff0fad17e8f90a0cd7677f18d31d69de9396e4f83ceb7b03b9195fca);
+        proof1.push(0x8288fc9886f278b1464fecfb1b27178c1c3864991d427c1a4e168e93219c97e3);
+        proof1.push(0xe454ca7df21af8d03d28d93139e4b7ded0eb60bd98545fe7482197f8d2dd23c6);
 
         dev_proof.push(0x7c3ac7455005dcd76d3cd38b4dbc59436ed10518b4bf13c8d339e19ad7ad9182);
         dev_proof.push(0x63c24f74f56ff175222c700f7cb2245efb76261c8a837257d0acef1ade318a52);
@@ -150,20 +151,33 @@ contract LockDistributionTest is DSTest {
         community_proof.push(0x16a2e7d223f638cabe4c7e58878ec7dfced40021795eaf1c052c40da529c7698);
         community_proof.push(0xde5745fc234d2a9bc5f8ee2a8e7704266a16b02d3c0f10a0339b34f6b8105969);
 
-        emit log_named_uint("admin balance before", baoToken.balanceOf(address(vyperDeployer)));
-        //1500000000000000000000000000
+        emit log_named_uint("admin balance before setup", baoToken.balanceOf(address(vyperDeployer)));
+        //1,091,753,221 total
 
-        //transfer initial supply after farms end to the distribution contract
+        //transfer initial locked supply after farms end to the distribution contract
+        //832,364,383.418932981187447848
         cheats.prank(address(vyperDeployer));
-        baoToken.transfer(address(distribution), 12e26);
-        emit log_named_uint("admin balance after 1.2B", baoToken.balanceOf(address(vyperDeployer)));
-        //300000000000000000000000000
+        baoToken.transfer(address(distribution), 832364383418932981187447848);
+        emit log_named_uint("admin balance after locked is sent to distr contract", baoToken.balanceOf(address(vyperDeployer)));
+        
+        //transfer balance to swapper contract
+        //166,850,344.226331394130869546
         cheats.prank(address(vyperDeployer));
-        baoToken.transfer(address(swap), 3e26);
-        emit log_named_uint("admin balance should be 0", baoToken.balanceOf(address(vyperDeployer)));
+        baoToken.transfer(address(swap), 166850344226331394130869546);
+        emit log_named_uint("admin balance after both swapper and distr are funded", baoToken.balanceOf(address(vyperDeployer)));
+
+        //treasury lock balance transferred to treasury
+        //92,538,492.678164717714597057
+        cheats.prank(address(vyperDeployer));
+        baoToken.transfer(treasury, 92538492678164717714597057);
+
+        emit log_named_uint("admin balance should be ~0", baoToken.balanceOf(address(vyperDeployer)));
         emit log_named_uint("distr balance received", baoToken.balanceOf(address(distribution)));
         emit log_named_uint("swapper balance received", baoToken.balanceOf(address(swap)));
-        assertEq(baoToken.balanceOf(address(distribution)), 12e26);
+        emit log_named_uint("treasury balance received", baoToken.balanceOf(treasury));
+        assertEq(baoToken.balanceOf(address(distribution)), 832364383418932981187447848);
+        assertEq(baoToken.balanceOf(address(swap)), 166850344226331394130869546);
+        assert(baoToken.balanceOf(treasury) >= 92538492678164717714597057);
 
         //commit and apply distribution contract to the voting escrow contract
         cheats.prank(address(vyperDeployer));
@@ -457,11 +471,10 @@ contract LockDistributionTest is DSTest {
     function testSwap() public {
         cheats.startPrank(eoaTest, eoaTest);
 
-        emit log_named_uint("baov2 token balance of swapper before", baoToken.balanceOf(address(swap))); //300000000000000000000000000
+        emit log_named_uint("baov2 token balance of swapper before", baoToken.balanceOf(address(swap))); //166850344226331394130869546
         emit log_named_uint("baov1 token balance of eoaTest before", baoV1.balanceOf(address(eoaTest))); //249891825684763220910719509
         emit log_named_int("expected baov2 token balance of eoaTest", 249891825684763220910719); //      249891825684763220910719 | 249891825684763220910719509 / 1000
 
-        //baoToken.approve(address(swap), baoV1.balanceOf(eoaTest));
         //approve: 249891825684763220910719509
         baoV1.approve(address(swap), baoV1.balanceOf(eoaTest));
         swap.convertV1(eoaTest, baoV1.balanceOf(eoaTest));
@@ -471,7 +484,7 @@ contract LockDistributionTest is DSTest {
         emit log_named_uint("baoV1 balance of eoaTest", baoV1.balanceOf(eoaTest));
         emit log_named_uint("baov2 token balance of swapper after", baoToken.balanceOf(address(swap)));
 
-        assert(300000000000000000000000000 - baoToken.balanceOf(address(swap)) == baoToken.balanceOf(eoaTest));
+        assert(166850344226331394130869546 - baoToken.balanceOf(address(swap)) == baoToken.balanceOf(eoaTest));
 
         //249,891,825.684763220910719509 baoV1
         //249,891.825684763220910719    expected baoV2
