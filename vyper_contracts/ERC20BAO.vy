@@ -56,7 +56,7 @@ YEAR: constant(uint256) = 86400 * 365
 
 # Supply parameters
 INITIAL_SUPPLY_CAP: constant(uint256) = 1_091_753_221 # locked supply + circulating at farm ending 1,091,753,220.323429093032914451
-INITIAL_RATE: constant(uint256) = 274_815_283 * 10 ** 18 / YEAR #X% premine test value, think its close to ~49.5% here
+INITIAL_RATE: constant(uint256) = 230_255_942 * 10 ** 18 / YEAR #X% premine test value, think its close to ~49.5% here
 RATE_REDUCTION_TIME: constant(uint256) = YEAR
 RATE_REDUCTION_COEFFICIENT: constant(uint256) = 1189207115002721024  #2 ** (1/4) * 1e18
 RATE_DENOMINATOR: constant(uint256) = 10 ** 18
